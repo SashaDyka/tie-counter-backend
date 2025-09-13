@@ -10,30 +10,38 @@ export class BillsService{
     //TODO: create calculateBillResults method
 
     async createBill(data: CreateBillDto){
-        const {totalAmount, defaultTipPercentage, people} = data;
-        if(totalAmount <= 0){
-            throw new BadRequestException('Total amount must be a positive number.');
-        }
-        const totalIndividualAmount = people
-            .filter(p => p.individualAmount !== undefined && p.individualAmount !== null)
-            .reduce((sum, p) => sum + p.individualAmount, 0);
-
-        if (totalIndividualAmount > totalAmount) {
-            throw new BadRequestException('The sum of individual payments cannot exceed the total amount.');
-        }
+        this.validateBillData(data);
 
         const prismaData = {
-            totalAmount,
-            defaultTipPercentage,
+            totalAmount: data.totalAmount,
+            defaultTipPercentage: data.defaultTipPercentage,
             people: {
-                create: people,
+                create: data.people,
             },
-        };
+        }
         
         return this.prisma.bill.create({data: prismaData});
     }
 
 
+    private validateBillData(data: CreateBillDto){
+        const {totalAmount, defaultTipPercentage, people} = data;
+        if(totalAmount <= 0){
+            throw new BadRequestException('Total amount must be a positive number.');
+        }
+         
+        let totalIndividualAmount = 0;
+        for (const person of people) {
+            if (person.individualAmount) {
+                totalIndividualAmount += person.individualAmount;
+            }
+        }
+
+        if (totalIndividualAmount > totalAmount) {
+        throw new BadRequestException('The sum of individual payments cannot exceed the total amount of the bill.');
+        }
+
+    }
     
 
     async findAll(){
