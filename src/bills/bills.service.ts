@@ -8,7 +8,7 @@ export class BillsService{
     async findAll(){
         return this.prisma.bill.findMany({
             include: {
-                participants: true,
+                people: true,
             },
         });
     }
