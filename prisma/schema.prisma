@@ -9,11 +9,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Bill{
-  id Int
-
+model Bill {
+  id                    Int         @id @default(autoincrement())
+  totalAmount           Float
+  defaultTipPercentage  Int
+  participants          Participant[]
 }
 
-model Participant{
-  
+model Participant {
+  id                        Int      @id @default(autoincrement())
+  name                      String
+  billId                    Int
+  bill                      Bill     @relation(fields: [billId], references: [id])
+  individualTipPercentage   Int?
+  individualAmount          Float?
 }
