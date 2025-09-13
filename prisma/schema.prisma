@@ -14,6 +14,8 @@ model Bill {
   totalAmount           Float
   defaultTipPercentage  Int
   participants          Participant[]
+
+  @@map("bills")
 }
 
 model Participant {
@@ -23,4 +25,6 @@ model Participant {
   bill                      Bill     @relation(fields: [billId], references: [id])
   individualTipPercentage   Int?
   individualAmount          Float?
+
+  @@map("participants")
 }
