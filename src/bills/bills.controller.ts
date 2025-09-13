@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param, Delete } from '@nestjs/common';
 import { BillsService } from './bills.service';
 import { CreateBillDto } from '../dto/create-bill.dto';
+import { UpdateBillDto } from '../dto/update-bill.dto';
 
 
 
@@ -25,7 +26,7 @@ export class BillsController{
 
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateBillDto: KLKMKL) {
+    update(@Param('id') id: string, @Body() updateBillDto: UpdateBillDto) {
         return this.billsService.update(+id, updateBillDto);
     }
 
