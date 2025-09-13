@@ -2,13 +2,13 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaServise } from '../prisma/prisma.service';
 import { Bill, Person } from '../../generated/prisma';
 import { CreateBillDto } from '../dto/create-bill.dto';
+import { UpdateBillDto } from '../dto/update-bill.dto';
+
 
 
 @Injectable() 
 export class BillsService{
     constructor(private prisma: PrismaServise){}
-
-    //TODO: create calculateBillResults method
 
     async createBill(data: CreateBillDto){
         this.validateBillData(data);
@@ -66,12 +66,47 @@ export class BillsService{
         return this.calculateBillResults(bill);
     }
 
-    async update(id: number, data: any){
 
+    async update(id: number, data: UpdateBillDto){
+        const existingBill = await this.prisma.bill.findUnique({ 
+            where: { id }, 
+            include: { people: true },
+        });
+        if (!existingBill) {
+            throw new NotFoundException(`Bill with ID ${id} not found.`);
+        }
+
+        const updatedBill = await this.prisma.bill.update({
+            where: { id },
+            data: {
+                totalAmount: data.totalAmount,
+                defaultTipPercentage: data.defaultTipPercentage,
+                people: {
+                    create: data.peopleToAdd,
+                    update: (data.peopleToUpdate || []).map(p => ({
+                        where: { id: p.id },
+                        data: {
+                            name: p.name,
+                            individualAmount: p.individualAmount,
+                            individualTipPercentage: p.individualTipPercentage,
+                        },
+                    })),
+                    deleteMany: {
+                        id: { in: data.peopleToRemove || [] },
+                    },
+                },
+            },
+            include: { people: true },
+        });
+
+        return this.calculateBillResults(updatedBill);
     }
+    
 
     async remove(id: number){
-
+        return this.prisma.bill.delete({
+            where: { id },
+        });
     }
 
 
