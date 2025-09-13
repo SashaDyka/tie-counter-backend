@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaServise } from '../prisma/prisma.service';
+import { Bill, Person } from '../../generated/prisma';
 import { CreateBillDto } from '../dto/create-bill.dto';
 
 
@@ -19,7 +20,7 @@ export class BillsService{
                 create: data.people,
             },
         }
-        
+
         return this.prisma.bill.create({data: prismaData});
     }
 
@@ -53,7 +54,16 @@ export class BillsService{
     }
 
     async findOne(id: number){
+        const bill = await this.prisma.bill.findUnique({
+            where: { id },
+            include: { people: true },
+        });
 
+        if (!bill) {
+            throw new NotFoundException(`Bill with ID ${id} not found.`);
+        }
+
+        return this.calculateBillResults(bill);
     }
 
     async update(id: number, data: any){
@@ -61,6 +71,42 @@ export class BillsService{
     }
 
     async remove(id: number){
+
+    }
+
+
+    private calculateBillResults(bill: Bill & { people: Person[] }){
+        const { totalAmount, defaultTipPercentage, people } = bill;
+        
+        const calculatedTip = totalAmount * (defaultTipPercentage / 100);
+        const finalAmount = totalAmount + calculatedTip;
+
+        const peopleWithPayments = people.map(person => {
+            let amountToPay = 0;
+            
+            if (person.individualAmount) {
+                amountToPay = person.individualAmount;
+            } 
+            else if (person.individualTipPercentage) {
+                const individualTip = totalAmount * (person.individualTipPercentage / 100);
+                amountToPay = totalAmount / people.length + individualTip;
+            } 
+            else {
+                amountToPay = finalAmount / people.length;
+            }
+
+            return {
+                ...person,
+                amountToPay,
+            };
+        });
+
+        return {
+            ...bill,
+            calculatedTip,
+            finalAmount,
+            people: peopleWithPayments,
+        };
 
     }
 
