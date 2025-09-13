@@ -6,6 +6,6 @@ export class PersonsServise{
     constructor(private prisma: PrismaServise){}
     
     async findAll(){
-        return this.prisma.bill.findMany();
+        return this.prisma.person.findMany();
     }
 }
